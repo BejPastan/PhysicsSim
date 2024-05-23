@@ -15,6 +15,11 @@ public class SimulationController : MonoBehaviour
     [Range(0, 10)]
     float minMass;
 
+    [SerializeField]
+    [Range(0, 20)]
+    float spawnRange;
+
+    [SerializeField]
     List<GravityObject> gravityObjects = new();
 
     private void Start()
@@ -22,7 +27,7 @@ public class SimulationController : MonoBehaviour
         for(int i = 0; i < objectCount; i++)
         {
             Transform newObject = GameObject.CreatePrimitive(PrimitiveType.Sphere).transform;
-            gravityObjects.Add(new GravityObject(Random.Range(minMass, maxMass), new Vector2(Random.Range(-5, 5), Random.Range(-5, 5)), newObject, objectRadius));
+            gravityObjects.Add(new GravityObject(Random.Range(minMass, maxMass), new Vector2(Random.Range(-spawnRange, spawnRange), Random.Range(-spawnRange, spawnRange)), newObject, objectRadius));
         }
     }
 
@@ -37,6 +42,12 @@ public class SimulationController : MonoBehaviour
                 {
                     continue;
                 }
+                if (Colide(gravityObjects[i], gravityObjects[j]))
+                {
+                    gravityObjects[i].Combine(gravityObjects[j].radius, gravityObjects[j].mass, gravityObjects[j].velocity);
+                    gravityObjects[j].Remove();
+                    gravityObjects.RemoveAt(j);
+                }
                 force = GravityCalculation.CalcForce(gravityObjects[i].position, gravityObjects[j].position, gravityObjects[i].mass, gravityObjects[j].mass);
                 gravityObjects[j].UpdateForce(-force);
                 gravityObjects[i].UpdateForce(force);
@@ -50,17 +61,22 @@ public class SimulationController : MonoBehaviour
         }
     }
 
-    
-
     private bool InRange(GravityObject obj1, GravityObject obj2)
     {
         float dist = Vector2.Distance(obj1.position, obj2.position);
         if(dist < obj1.impactRadius && dist < obj2.impactRadius)
         {
-            if(obj1.radius<dist && obj2.radius < dist)
-            {
-                return true;
-            }
+            return true;
+        }
+        return false;
+    }
+
+    private bool Colide(GravityObject obj1, GravityObject obj2)
+    {
+        float dist = Vector2.Distance(obj1.position, obj2.position);
+        if (obj1.radius > dist || obj2.radius > dist)
+        {
+            return true;
         }
         return false;
     }
